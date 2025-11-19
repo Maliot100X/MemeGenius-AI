@@ -1,5 +1,5 @@
 import React from 'react';
-import { Upload, Image as ImageIcon } from 'lucide-react';
+import { Upload } from 'lucide-react';
 import { MemeTemplate } from '../types';
 
 interface GalleryProps {
@@ -27,6 +27,14 @@ const TEMPLATES: MemeTemplate[] = [
   { id: '16', name: 'Waiting Skeleton', url: 'https://i.imgflip.com/2fm6x.jpg' },
   { id: '17', name: 'Is This a Pigeon?', url: 'https://i.imgflip.com/1w7ygt.jpg' },
   { id: '18', name: 'Batman Slapping Robin', url: 'https://i.imgflip.com/9ehk.jpg' },
+  { id: '19', name: 'X, X Everywhere', url: 'https://i.imgflip.com/1ihzfe.jpg' },
+  { id: '20', name: 'Tuxedo Winnie the Pooh', url: 'https://i.imgflip.com/2ybua0.jpg' },
+  { id: '21', name: 'Buff Doge vs. Cheems', url: 'https://i.imgflip.com/43a45p.jpg' },
+  { id: '22', name: 'Finding Neverland', url: 'https://i.imgflip.com/3pnmg.jpg' },
+  { id: '23', name: 'Hard to Swallow Pills', url: 'https://i.imgflip.com/21uy0f.jpg' },
+  { id: '24', name: 'Ight Imma Head Out', url: 'https://i.imgflip.com/32p3z2.jpg' },
+  { id: '25', name: 'One Does Not Simply', url: 'https://i.imgflip.com/1bij.jpg' },
+  { id: '26', name: 'Ancient Aliens', url: 'https://i.imgflip.com/26am.jpg' }
 ];
 
 const Gallery: React.FC<GalleryProps> = ({ onSelectTemplate, onUpload }) => {
@@ -43,7 +51,7 @@ const Gallery: React.FC<GalleryProps> = ({ onSelectTemplate, onUpload }) => {
           MemeGenius AI
         </h1>
         <p className="text-gray-400 text-xl max-w-2xl mx-auto">
-          Create viral memes with Magic Captions, Deep Analysis, Stickers, and AI Video.
+          Create viral memes with Magic Captions, Deep Analysis, Stickers, and Video.
         </p>
       </div>
 

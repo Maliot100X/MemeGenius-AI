@@ -12,6 +12,7 @@ interface MemeCanvasProps {
 
 export interface MemeCanvasHandle {
   download: () => void;
+  record: () => Promise<void>;
   getDataUrl: () => string;
 }
 
@@ -32,6 +33,36 @@ const MemeCanvas = forwardRef<MemeCanvasHandle, MemeCanvasProps>(({ imageSrc, to
       link.href = canvas.toDataURL('image/png');
       link.click();
     },
+    record: async () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      
+      // Create a stream from the canvas
+      const stream = canvas.captureStream(30); // 30 FPS
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+      
+      const chunks: Blob[] = [];
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+      
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `meme-video-${Date.now()}.webm`;
+        a.click();
+        URL.revokeObjectURL(url);
+      };
+
+      // Record for 3 seconds (simulating a "live" meme or just converting to video format)
+      mediaRecorder.start();
+      // Force a few redraws if needed to keep stream active, though captureStream usually handles static
+      setTimeout(() => {
+        mediaRecorder.stop();
+      }, 3000);
+    },
     getDataUrl: () => {
       return canvasRef.current?.toDataURL('image/png') || '';
     }
@@ -44,15 +75,7 @@ const MemeCanvas = forwardRef<MemeCanvasHandle, MemeCanvasProps>(({ imageSrc, to
         const img = new Image();
         img.crossOrigin = "anonymous";
         img.src = sticker.url;
-        // We don't need to force a redraw here strictly because the main draw loop 
-        // will pick it up or the img.onload could trigger a state update if we wanted,
-        // but for simplicity we let the next render cycle (e.g. mouse move or prop change) pick it up
-        // or we can force a redraw by setting a dummy state if needed.
-        // However, since `stickers` changes usually imply a re-render, it should be fine.
-        // To ensure it draws immediately after load:
         img.onload = () => {
-           // Force re-render logic could go here, but we depend on props changing mostly.
-           // We'll use a simple hack to force update if needed, but usually adding a sticker triggers the prop update.
            drawCanvas(); 
         };
         stickerImagesRef.current.set(sticker.id, img);
@@ -78,19 +101,13 @@ const MemeCanvas = forwardRef<MemeCanvasHandle, MemeCanvasProps>(({ imageSrc, to
     img.crossOrigin = "anonymous";
     img.src = imageSrc;
 
-    // We use a flag or check if image is loaded. 
-    // If this is a fresh load, we might need onload.
-    // But `imageSrc` usually stays stable.
     if (!img.complete) {
         img.onload = drawCanvas;
     }
 
-    // Calculate aspect ratio
     const MAX_WIDTH = 800; 
     const scale = Math.min(1, MAX_WIDTH / img.width);
     
-    // Only set dimensions if they change to avoid clearing canvas unnecessarily,
-    // but we want to clear it for every frame anyway.
     if (canvas.width !== img.width * scale || canvas.height !== img.height * scale) {
         canvas.width = img.width * scale;
         canvas.height = img.height * scale;
@@ -165,7 +182,6 @@ const MemeCanvas = forwardRef<MemeCanvasHandle, MemeCanvasProps>(({ imageSrc, to
       });
     };
 
-    // Draw Top/Bottom Text
     drawText(topText, canvas.height * 0.05, 'top');
     drawText(bottomText, canvas.height * 0.95, 'bottom');
   };
@@ -173,13 +189,12 @@ const MemeCanvas = forwardRef<MemeCanvasHandle, MemeCanvasProps>(({ imageSrc, to
   // Redraw whenever props change
   useEffect(() => {
     drawCanvas();
-  }); // Intentionally no deps to run on every render which is triggered by state updates
+  }); 
 
   const getMousePos = (evt: React.MouseEvent) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
-    // Scale mouse coordinates to canvas resolution
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     return {
@@ -190,10 +205,8 @@ const MemeCanvas = forwardRef<MemeCanvasHandle, MemeCanvasProps>(({ imageSrc, to
 
   const handleMouseDown = (e: React.MouseEvent) => {
     const pos = getMousePos(e);
-    // Iterate in reverse to grab top-most sticker first
     for (let i = stickers.length - 1; i >= 0; i--) {
       const s = stickers[i];
-      // Simple bounding box hit test (ignoring rotation for simplicity of selection)
       if (
         pos.x >= s.x - s.width / 2 &&
         pos.x <= s.x + s.width / 2 &&

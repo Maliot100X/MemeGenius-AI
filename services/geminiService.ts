@@ -183,7 +183,20 @@ export const generateSticker = async (prompt: string): Promise<string> => {
  * Model: veo-3.1-fast-generate-preview
  */
 export const generateMemeVideo = async (prompt: string): Promise<string> => {
-  // Check for API key in window.aistudio if running in AI Studio context
+  
+  // Helper to handle polling mechanism
+  const pollOperation = async (ai: GoogleGenAI, initialOperation: any) => {
+    let operation = initialOperation;
+    while (!operation.done) {
+      await new Promise(resolve => setTimeout(resolve, 5000)); // Poll every 5s
+      operation = await ai.operations.getVideosOperation({ operation: operation });
+    }
+    const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
+    if (!downloadLink) throw new Error("Video generation failed: No URI returned");
+    return `${downloadLink}&key=${process.env.API_KEY}`;
+  };
+
+  // Ensure key is selected initially
   if (typeof window !== 'undefined' && (window as any).aistudio) {
     const hasKey = await (window as any).aistudio.hasSelectedApiKey();
     if (!hasKey) {
@@ -191,11 +204,10 @@ export const generateMemeVideo = async (prompt: string): Promise<string> => {
     }
   }
   
-  // Create fresh instance to ensure key is picked up
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+  let ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
   try {
-    let operation = await ai.models.generateVideos({
+    const operation = await ai.models.generateVideos({
       model: 'veo-3.1-fast-generate-preview',
       prompt: prompt,
       config: {
@@ -205,20 +217,35 @@ export const generateMemeVideo = async (prompt: string): Promise<string> => {
       }
     });
 
-    // Poll for completion
-    while (!operation.done) {
-      await new Promise(resolve => setTimeout(resolve, 5000)); // Poll every 5s
-      operation = await ai.operations.getVideosOperation({ operation: operation });
+    return await pollOperation(ai, operation);
+
+  } catch (error: any) {
+    // Handle "Requested entity was not found" (404) specific to Veo/Key issues
+    if (error.toString().includes("Requested entity was not found") || error.message?.includes("Requested entity was not found")) {
+      console.log("Entity not found (404) - Retrying with new key selection...");
+      
+      if (typeof window !== 'undefined' && (window as any).aistudio) {
+        // Force open key selection dialog
+        await (window as any).aistudio.openSelectKey();
+        
+        // Create fresh AI instance with potentially updated key environment
+        ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+        
+        // Retry the operation
+        const operation = await ai.models.generateVideos({
+          model: 'veo-3.1-fast-generate-preview',
+          prompt: prompt,
+          config: {
+            numberOfVideos: 1,
+            resolution: '720p',
+            aspectRatio: '16:9'
+          }
+        });
+        
+        return await pollOperation(ai, operation);
+      }
     }
 
-    const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
-    if (!downloadLink) throw new Error("Video generation failed: No URI returned");
-
-    // The URI requires the API key appended to fetch the raw bytes
-    const videoUrl = `${downloadLink}&key=${process.env.API_KEY}`;
-    return videoUrl;
-
-  } catch (error) {
     console.error("Error generating video:", error);
     throw error;
   }

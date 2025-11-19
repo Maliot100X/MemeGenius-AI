@@ -4,7 +4,7 @@ import MemeCanvas, { MemeCanvasHandle } from './components/MemeCanvas';
 import VideoGenerator from './components/VideoGenerator';
 import { ViewState, EditorTab, AnalysisResult, Sticker } from './types';
 import { generateMemeCaptions, editImageWithAI, analyzeImageDeeply, generateSticker } from './services/geminiService';
-import { Sparkles, Wand2, Search, Download, ArrowLeft, Image as ImageIcon, Check, Sticker as StickerIcon, Trash2, Plus, Video } from 'lucide-react';
+import { Sparkles, Wand2, Search, Download, ArrowLeft, Image as ImageIcon, Check, Sticker as StickerIcon, Trash2, Plus, Video, Clapperboard } from 'lucide-react';
 import { Spinner } from './components/Spinner';
 
 // Extend ViewState to include VIDEO
@@ -31,6 +31,7 @@ const App: React.FC = () => {
   // Stickers State
   const [stickers, setStickers] = useState<Sticker[]>([]);
   const [processingSticker, setProcessingSticker] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
 
   const canvasRef = useRef<MemeCanvasHandle>(null);
 
@@ -154,6 +155,14 @@ const App: React.FC = () => {
     }
   };
 
+  const handleDownloadVideo = async () => {
+    if (canvasRef.current) {
+      setIsRecording(true);
+      await canvasRef.current.record();
+      setIsRecording(false);
+    }
+  };
+
   const removeSticker = (id: string) => {
     setStickers(prev => prev.filter(s => s.id !== id));
   };
@@ -261,12 +270,22 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              <button 
-                onClick={() => canvasRef.current?.download()}
-                className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-900/20 flex items-center justify-center gap-2 transition-all transform active:scale-[0.99]"
-              >
-                <Download className="w-5 h-5" /> Download Meme
-              </button>
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => canvasRef.current?.download()}
+                  className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-900/20 flex items-center justify-center gap-2 transition-all transform active:scale-[0.99]"
+                >
+                  <Download className="w-5 h-5" /> Download Image
+                </button>
+                 <button 
+                  onClick={handleDownloadVideo}
+                  disabled={isRecording}
+                  className="flex-1 bg-pink-600 hover:bg-pink-500 disabled:bg-pink-600/50 text-white font-bold py-4 rounded-xl shadow-lg shadow-pink-900/20 flex items-center justify-center gap-2 transition-all transform active:scale-[0.99]"
+                >
+                  {isRecording ? <Spinner /> : <Clapperboard className="w-5 h-5" />}
+                  {isRecording ? 'Recording...' : 'Download Video (Free)'}
+                </button>
+              </div>
             </div>
 
             {/* Right Column: AI Tools */}
