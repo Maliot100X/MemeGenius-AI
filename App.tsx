@@ -1,17 +1,15 @@
 import React, { useState, useRef } from 'react';
 import Gallery from './components/Gallery';
 import MemeCanvas, { MemeCanvasHandle } from './components/MemeCanvas';
-import VideoGenerator from './components/VideoGenerator';
 import { ViewState, EditorTab, AnalysisResult, Sticker } from './types';
 import { generateMemeCaptions, editImageWithAI, analyzeImageDeeply, generateSticker } from './services/geminiService';
-import { Sparkles, Wand2, Search, Download, ArrowLeft, Image as ImageIcon, Check, Sticker as StickerIcon, Trash2, Plus, Video, Clapperboard } from 'lucide-react';
+import { Sparkles, Wand2, Search, Download, ArrowLeft, Image as ImageIcon, Check, Sticker as StickerIcon, Trash2, Plus, Clapperboard } from 'lucide-react';
 import { Spinner } from './components/Spinner';
 
-// Extend ViewState to include VIDEO
+// Extend ViewState
 enum AppView {
   GALLERY = 'GALLERY',
   EDITOR = 'EDITOR',
-  VIDEO = 'VIDEO'
 }
 
 const App: React.FC = () => {
@@ -199,12 +197,6 @@ const App: React.FC = () => {
               >
                 Gallery
               </button>
-              <button 
-                onClick={() => setView(AppView.VIDEO)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1 ${view === AppView.VIDEO ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'}`}
-              >
-                <Video className="w-3 h-3" /> Video Gen
-              </button>
             </div>
           </div>
 
@@ -223,10 +215,6 @@ const App: React.FC = () => {
       <main>
         {view === AppView.GALLERY && (
           <Gallery onSelectTemplate={handleSelectTemplate} onUpload={handleUpload} />
-        )}
-
-        {view === AppView.VIDEO && (
-          <VideoGenerator />
         )}
 
         {view === AppView.EDITOR && (
