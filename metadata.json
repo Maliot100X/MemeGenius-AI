@@ -1,0 +1,7 @@
+{
+  "name": "MemeGenius AI",
+  "description": "An AI-powered meme generator featuring Magic Captions, AI image editing with Nano Banana, and deep image analysis.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
