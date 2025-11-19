@@ -67,7 +67,6 @@ const App: React.FC = () => {
       }
 
       // 2. Fallback: Check if API Key is baked into env (Vercel/Local)
-      // Note: In Vite, process.env.API_KEY is replaced by string literal if defined
       if (process.env.API_KEY) {
         setIsAuthenticated(true);
       }
@@ -90,10 +89,9 @@ const App: React.FC = () => {
         setError("Failed to sign in. Please try again.");
       }
     } else {
-      // Fallback for environments without the AI Studio wrapper
-      // We can't really "Sign in with Google" for an API Key here easily without a backend,
-      // so we rely on the ENV var check. 
-      alert("To use this app outside of Google AI Studio, please ensure the API_KEY environment variable is set in your deployment settings.");
+      // Silent fallback: If window.aistudio is missing, we simply log it.
+      // The user will not see an alert.
+      console.warn("Google AI Studio authentication context not found.");
     }
   };
 
