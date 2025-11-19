@@ -1,22 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import Gallery from './components/Gallery';
 import MemeCanvas, { MemeCanvasHandle } from './components/MemeCanvas';
-import { ViewState, EditorTab, AnalysisResult, Sticker } from './types';
+import { EditorTab, AnalysisResult, Sticker } from './types';
 import { generateMemeCaptions, editImageWithAI, analyzeImageDeeply, generateSticker } from './services/geminiService';
-import { Sparkles, Wand2, Search, Download, ArrowLeft, Image as ImageIcon, Check, Sticker as StickerIcon, Trash2, Plus, Clapperboard } from 'lucide-react';
+import { Sparkles, Wand2, Search, Download, ArrowLeft, Sticker as StickerIcon, Trash2, Plus, Clapperboard } from 'lucide-react';
 import { Spinner } from './components/Spinner';
-
-// Define AI Studio window interface
-declare global {
-  interface AIStudio {
-    hasSelectedApiKey: () => Promise<boolean>;
-    openSelectKey: () => Promise<void>;
-  }
-  
-  interface Window {
-    aistudio?: AIStudio;
-  }
-}
 
 // Extend ViewState
 enum AppView {
@@ -31,9 +19,8 @@ const App: React.FC = () => {
   const [bottomText, setBottomText] = useState('');
   const [activeTab, setActiveTab] = useState<EditorTab>(EditorTab.CAPTIONS);
   
-  // Auth State
+  // Auth State - Simple gatekeeper
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   // AI States
   const [isProcessing, setIsProcessing] = useState(false);
@@ -49,50 +36,9 @@ const App: React.FC = () => {
 
   const canvasRef = useRef<MemeCanvasHandle>(null);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    setIsCheckingAuth(true);
-    try {
-      // 1. Check if we are in AI Studio and have a key selected
-      if (window.aistudio) {
-        const hasKey = await window.aistudio.hasSelectedApiKey();
-        if (hasKey) {
-          setIsAuthenticated(true);
-          setIsCheckingAuth(false);
-          return;
-        }
-      }
-
-      // 2. Fallback: Check if API Key is baked into env (Vercel/Local)
-      if (process.env.API_KEY) {
-        setIsAuthenticated(true);
-      }
-    } catch (e) {
-      console.error("Auth check failed", e);
-    } finally {
-      setIsCheckingAuth(false);
-    }
-  };
-
-  const handleLogin = async () => {
-    if (window.aistudio) {
-      try {
-        await window.aistudio.openSelectKey();
-        // Re-check after modal closes
-        const hasKey = await window.aistudio.hasSelectedApiKey();
-        if (hasKey) setIsAuthenticated(true);
-      } catch (e) {
-        console.error("Login failed", e);
-        setError("Failed to sign in. Please try again.");
-      }
-    } else {
-      // Silent fallback: If window.aistudio is missing, we simply log it.
-      // The user will not see an alert.
-      console.warn("Google AI Studio authentication context not found.");
-    }
+  const handleLogin = () => {
+    // Simple login action as requested, no API key prompts
+    setIsAuthenticated(true);
   };
 
   // Convert URL/File to Base64 for AI
@@ -158,7 +104,7 @@ const App: React.FC = () => {
       const generated = await generateMemeCaptions(currentImage);
       setCaptions(generated);
     } catch (e) {
-      setError("Failed to generate magic captions. Please check your API key.");
+      setError("Failed to generate magic captions. Please check your connection.");
     } finally {
       setIsProcessing(false);
     }
@@ -238,14 +184,6 @@ const App: React.FC = () => {
         setBottomText(caption);
     }
   };
-
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <Spinner className="w-8 h-8 text-purple-500" />
-      </div>
-    );
-  }
 
   if (!isAuthenticated) {
     return (
